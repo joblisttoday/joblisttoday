@@ -23,7 +23,7 @@
 		min-height: var(--tap-size);
 		padding: var(--space-xs) var(--space-m) var(--space-xs) var(--space-xs);
 		border: var(--border);
-		border-radius: var(--radius-round);
+		border-radius: var(--radius);
 		color: var(--color-fg);
 		text-decoration: none;
 	}

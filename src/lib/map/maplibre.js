@@ -129,3 +129,72 @@ export function mountMap(node, points) {
 		map?.remove();
 	};
 }
+
+/**
+ * A map to choose one point: a tap (or a drag of its pin) puts it there. It starts on the
+ * point given, close, else the whole globe.
+ * @param {HTMLElement} node
+ * @param {{lat?: number, lon?: number}} start
+ * @param {(lat: number, lon: number) => void} onpick
+ * @returns {{move: (lat?: number, lon?: number) => void, destroy: () => void}}
+ */
+export function mountPicker(node, start, onpick) {
+	/** @type {import('maplibre-gl').Map | undefined} */
+	let map;
+	/** @type {import('maplibre-gl').Marker | undefined} */
+	let pin;
+	/** @type {typeof import('maplibre-gl') | undefined} */
+	let lib;
+	let removed = false;
+	const has = (/** @type {number | undefined} */ lat, /** @type {number | undefined} */ lon) => Number.isFinite(lat) && Number.isFinite(lon);
+	const color = getComputedStyle(node).getPropertyValue('--color-fg').trim();
+
+	/** @param {number} lat @param {number} lon */
+	const place = (lat, lon) => {
+		if (!map || !lib) return;
+		if (!pin) {
+			pin = new lib.Marker({ draggable: true, color }).setLngLat([lon, lat]).addTo(map);
+			pin.on('dragend', () => {
+				const at = pin?.getLngLat();
+				if (at) onpick(at.lat, at.lng);
+			});
+		} else pin.setLngLat([lon, lat]);
+	};
+
+	(async () => {
+		lib = await loadMapLibre();
+		if (removed) return;
+		const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+		const known = has(start.lat, start.lon);
+		const m = new lib.Map({
+			container: node,
+			style: dark ? config.map.styleDark : config.map.style,
+			center: known ? [/** @type {number} */ (start.lon), /** @type {number} */ (start.lat)] : /** @type {[number, number]} */ (config.map.center),
+			zoom: known ? config.map.pickZoom : config.map.zoom,
+			attributionControl: { compact: true },
+			cooperativeGestures: !matchMedia(config.map.finePointer).matches
+		});
+		map = m;
+		m.addControl(new lib.NavigationControl({ showCompass: false }));
+		m.on('style.load', () => m.setProjection({ type: config.map.projection }));
+		m.getCanvas().style.cursor = 'crosshair';
+		if (known) place(/** @type {number} */ (start.lat), /** @type {number} */ (start.lon));
+		m.on('click', (event) => {
+			place(event.lngLat.lat, event.lngLat.lng);
+			onpick(event.lngLat.lat, event.lngLat.lng);
+		});
+	})();
+
+	return {
+		move(lat, lon) {
+			if (!map || !has(lat, lon)) return;
+			const before = pin?.getLngLat();
+			place(/** @type {number} */ (lat), /** @type {number} */ (lon));
+			if (!before) map.jumpTo({ center: [/** @type {number} */ (lon), /** @type {number} */ (lat)], zoom: config.map.pickZoom });
+		},
+		destroy() {
+			removed = true;
+			map?.remove();
+		}
+	};
+}

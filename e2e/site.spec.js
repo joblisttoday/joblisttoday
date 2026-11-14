@@ -16,11 +16,14 @@ test('the home says what joblist does, how it works, and leads to signing in', a
 	await expect(page.getByLabel('Handle')).toBeVisible();
 });
 
-test('search, on the home: organizations on joblist, found through the network; a domain opens its page', async ({ page }) => {
+test('search, from the menu: organizations on joblist, found through the network; a domain opens its page', async ({ page }) => {
 	await page.goto('/');
+	await page.getByRole('navigation').getByRole('link', { name: 'Search' }).click();
+	await expect(page).toHaveURL(/\/search$/);
 	const box = page.getByRole('searchbox', { name: 'Search organizations and jobs' });
 	await box.fill('joblist');
 	await expect(page.getByRole('link', { name: /joblist\.today/ }).first()).toBeVisible({ timeout: 30_000 });
+	await expect(page).toHaveURL(/\/search\?q=joblist$/);
 	await box.fill('https://joblist.today/');
 	await box.press('Enter');
 	await expect(page).toHaveURL(/\/joblist\.today$/);
@@ -81,7 +84,7 @@ test('its jobs on any website: a line to paste, and the frame it opens', async (
 
 test('static files and statuses, as GitHub Pages serves them', async ({ request }) => {
 	expect((await request.get('/a/b/c')).status()).toBe(404);
-	for (const path of ['/signin', '/settings', '/settings/language', '/about']) expect((await request.get(path)).status()).toBe(200);
+	for (const path of ['/search', '/signin', '/settings', '/settings/language', '/about']) expect((await request.get(path)).status()).toBe(200);
 	expect(await (await request.get('/robots.txt')).text()).toContain('Sitemap:');
 	expect(await (await request.get('/llms.txt')).text()).toContain('today.joblist.job');
 });

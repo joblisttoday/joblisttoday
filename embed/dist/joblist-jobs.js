@@ -1982,9 +1982,13 @@ var $ = {
 		handleResolver: "https://public.api.bsky.app",
 		dns: "https://cloudflare-dns.com/dns-query",
 		relay: "https://relay1.us-east.bsky.network",
-		placeSearch: "https://photon.komoot.io/api/"
+		placeSearch: "https://photon.komoot.io/api/",
+		placeAt: "https://photon.komoot.io/reverse"
 	},
-	links: { signup: "https://bsky.app" },
+	links: {
+		signup: "https://bsky.app",
+		bluesky: "https://bsky.app/profile/{did}"
+	},
 	jobPost: {
 		days: 30,
 		maxDays: 120,
@@ -2024,6 +2028,7 @@ var $ = {
 		center: [10, 30],
 		zoom: 1,
 		maxZoom: 11,
+		pickZoom: 15,
 		padding: 48,
 		pointRadius: 6,
 		pointStroke: 2,
@@ -2034,7 +2039,7 @@ var $ = {
 		finePointer: "(hover: hover) and (pointer: fine)"
 	},
 	placeSearch: {
-		limit: 6,
+		limit: 8,
 		minLength: 2,
 		delayMs: 250,
 		languages: [
@@ -2043,6 +2048,9 @@ var $ = {
 			"de"
 		],
 		layers: [
+			"house",
+			"street",
+			"other",
 			"city",
 			"locality",
 			"district",
@@ -2113,6 +2121,7 @@ function Kr(e) {
 		remote: String(e.remote || ""),
 		employment: String(e.employment || ""),
 		apply: Hr(e.apply?.url, { email: !0 }) || (String(e.url || "").startsWith(`${$.url}/job/`) ? "" : Hr(e.url)),
+		bluesky: !!e.apply?.bluesky,
 		createdAt: String(e.createdAt || ""),
 		expiresAt: String(e.expiresAt || "")
 	};
@@ -2271,6 +2280,7 @@ var si = {
 			"job.employment.internship": "Internship",
 			"job.employment.volunteer": "Volunteer",
 			"job.apply": "Apply",
+			"job.apply.bluesky": "Message on Bluesky",
 			"job.posted": "Posted {ago}",
 			"job.left": "{count} days left",
 			"job.left.one": "1 day left",
@@ -2302,6 +2312,7 @@ var si = {
 			"job.employment.internship": "Stage",
 			"job.employment.volunteer": "Bénévolat",
 			"job.apply": "Postuler",
+			"job.apply.bluesky": "Écrire sur Bluesky",
 			"job.posted": "Publiée {ago}",
 			"job.left": "encore {count} jours",
 			"job.left.one": "encore 1 jour",
@@ -2333,6 +2344,7 @@ var si = {
 			"job.employment.internship": "Praktikum",
 			"job.employment.volunteer": "Ehrenamt",
 			"job.apply": "Bewerben",
+			"job.apply.bluesky": "Auf Bluesky schreiben",
 			"job.posted": "Veröffentlicht {ago}",
 			"job.left": "noch {count} Tage",
 			"job.left.one": "noch 1 Tag",
@@ -2364,6 +2376,7 @@ var si = {
 			"job.employment.internship": "Prácticas",
 			"job.employment.volunteer": "Voluntariado",
 			"job.apply": "Postular",
+			"job.apply.bluesky": "Escribir en Bluesky",
 			"job.posted": "Publicada {ago}",
 			"job.left": "quedan {count} días",
 			"job.left.one": "queda 1 día",
@@ -2414,6 +2427,7 @@ function _i(e, t) {
 				"job.employment.internship": "Internship",
 				"job.employment.volunteer": "Volunteer",
 				"job.apply": "Apply",
+				"job.apply.bluesky": "Message on Bluesky",
 				"job.posted": "Posted {ago}",
 				"job.left": "{count} days left",
 				"job.left.one": "1 day left",
@@ -2445,6 +2459,7 @@ function _i(e, t) {
 				"job.employment.internship": "Stage",
 				"job.employment.volunteer": "Bénévolat",
 				"job.apply": "Postuler",
+				"job.apply.bluesky": "Écrire sur Bluesky",
 				"job.posted": "Publiée {ago}",
 				"job.left": "encore {count} jours",
 				"job.left.one": "encore 1 jour",
@@ -2476,6 +2491,7 @@ function _i(e, t) {
 				"job.employment.internship": "Praktikum",
 				"job.employment.volunteer": "Ehrenamt",
 				"job.apply": "Bewerben",
+				"job.apply.bluesky": "Auf Bluesky schreiben",
 				"job.posted": "Veröffentlicht {ago}",
 				"job.left": "noch {count} Tage",
 				"job.left.one": "noch 1 Tag",
@@ -2507,6 +2523,7 @@ function _i(e, t) {
 				"job.employment.internship": "Prácticas",
 				"job.employment.volunteer": "Voluntariado",
 				"job.apply": "Postular",
+				"job.apply.bluesky": "Escribir en Bluesky",
 				"job.posted": "Publicada {ago}",
 				"job.left": "quedan {count} días",
 				"job.left.one": "queda 1 día",

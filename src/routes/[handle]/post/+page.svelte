@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import config from '#lib/data/config.json';
+	import AccountLine from '#lib/components/AccountLine.svelte';
 	import JobForm from '#lib/components/JobForm.svelte';
 	import OwnOnly from '#lib/components/OwnOnly.svelte';
 	import { getRecord } from '#lib/atproto.js';
@@ -24,7 +25,7 @@
 
 <OwnOnly handle={domain}>
 	<h1>{t('post.title')}</h1>
-	<p><small>{t('post.intro')}</small></p>
+	<AccountLine handle={domain} />
 	{#if companyValue !== undefined}
 		<JobForm company={domain} {companyValue} onsaved={(rkey) => goto(jobPath(/** @type {string} */ (session.did), rkey))} oncancel={() => history.back()} />
 	{/if}

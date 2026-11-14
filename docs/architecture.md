@@ -8,7 +8,7 @@ the organization's own atproto account; what an organization writes goes to that
 
 | Piece | Where it runs | What it reads |
 |---|---|---|
-| The app (SvelteKit, `ssr = false`) | GitHub Pages, static files (`pages` workflow, on each push) | an organization's account: its identity (PLC, or `did:web`), its records on its own server, its Bluesky picture (the public AppView); to search, which accounts have an organization record (the network's relay); places by name (Photon, OpenStreetMap); map tiles (OpenFreeMap) |
+| The app (SvelteKit, `ssr = false`) | GitHub Pages, static files (`pages` workflow, on each push) | an organization's account: its identity (PLC, or `did:web`), its records on its own server, its Bluesky picture (the public AppView); to search, which accounts have an organization record (the network's relay); places by name or address, and what is at a point chosen on a map (Photon, OpenStreetMap); map tiles (OpenFreeMap) |
 | The site's own pages (`site/site.js`) | written after the build | nothing: what joblist is |
 | The embed (`embed/`, `<joblist-jobs organization="acme.org">`) | organizations' own websites; jsDelivr and the site serve it | the organization's account, the same way |
 | Lexicon publishing (`lexicons` workflow) | by hand, by the owner | the schemas in `lexicons/` |
@@ -17,7 +17,8 @@ the organization's own atproto account; what an organization writes goes to that
 
 | Address | What it is |
 |---|---|
-| `/` | search (organizations and their open jobs, a domain opens its page; their places on a map); signed out: what joblist does in brief, with its picture, a link to `/about`, and to sign in; signed in: only its organization in brief (its pill, its open jobs, post a job) |
+| `/` | signed out: what joblist does in brief, with its picture, a link to `/about`, and to sign in; signed in: only its organization in brief (its pill, its open jobs, post a job) |
+| `/search` | from the menu: organizations and their open jobs (a domain opens its page; their places on a map); what is asked stays in the address (`?q=`) |
 | `/signin` | sign in with an organization's domain as its handle; then its page |
 | `/settings` | the account signed in here (its page), else to sign in; the language; the source code; sign out |
 | `/settings/language` | the language, one tap each |

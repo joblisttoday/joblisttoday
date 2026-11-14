@@ -1,4 +1,6 @@
 <script>
+	import AccountLine from '#lib/components/AccountLine.svelte';
+	import Loading from '#lib/components/Loading.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import config from '#lib/data/config.json';
@@ -30,13 +32,14 @@
 <svelte:head><title>{t('post.edit')} · {config.name}</title></svelte:head>
 
 {#if job === undefined}
-	<p><small>…</small></p>
+	<Loading />
 {:else if !job}
 	<h1>{t('notFound.title')}</h1>
 	<p>{t('job.notFound')}</p>
 {:else}
 	<OwnOnly handle={job.company}>
 		<h1>{t('post.edit')}</h1>
+		<AccountLine handle={job.company} />
 		<JobForm company={job.company} {companyValue} {rkey} value={job.value} onsaved={() => goto(jobPath(did, rkey))} oncancel={() => history.back()} />
 	</OwnOnly>
 {/if}

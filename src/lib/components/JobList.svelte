@@ -3,7 +3,6 @@
 	import config from '#lib/data/config.json';
 	import { ago } from '#lib/i18n/dates.js';
 	import { daysLeft, jobPath } from '#lib/records.js';
-	import { share } from '#lib/share.js';
 	import { deleteRecord } from '#lib/session.svelte.js';
 	import { i18n, t } from '#lib/i18n/index.svelte.js';
 
@@ -14,7 +13,6 @@
 	 * @type {{jobs: import('#lib/profile.js').Job[], did: string, own?: boolean, ondeleted?: (rkey: string) => void}}
 	 */
 	let { jobs, did, own = false, ondeleted } = $props();
-	let copied = $state('');
 
 	/** @param {import('#lib/profile.js').Job} job */
 	const facts = (job) => [job.place, job.remote && t(`job.remote.${job.remote}`), job.employment && t(`job.employment.${job.employment}`)].filter(Boolean);
@@ -26,13 +24,7 @@
 	function actions(job) {
 		const path = jobPath(did, job.rkey);
 		return [
-			{
-				label: t('menu.share'),
-				icon: /** @type {const} */ ('share'),
-				onclick: async () => {
-					if ((await share({ title: job.title, url: location.origin + path })) === 'copied') copied = job.rkey;
-				}
-			},
+			{ label: t('menu.share'), icon: /** @type {const} */ ('share'), share: { title: job.title, url: location.origin + path } },
 			...(own
 				? [
 						{ label: t('profile.edit'), icon: /** @type {const} */ ('edit'), href: `${path}/edit` },
@@ -56,8 +48,8 @@
 		<li data-closed={job.live ? undefined : ''}>
 			<div>
 				<a href={jobPath(did, job.rkey)}>{job.title}</a>
-				{#if meta.length}<span>{meta.join(' · ')}</span>{/if}
-				<small>{copied === job.rkey ? t('menu.copied') : when(job).join(' · ')}</small>
+				<span>{meta.join(' · ')}</span>
+				<small>{when(job).join(' · ')}</small>
 			</div>
 			<ContextMenu label={t('menu.more')} items={actions(job)} />
 		</li>
@@ -66,6 +58,7 @@
 
 <style>
 	ul {
+		container-type: inline-size;
 		margin: 0;
 		padding: 0;
 		list-style: none;
@@ -131,6 +124,23 @@
 	}
 	span {
 		font-size: var(--font-size-small);
+	}
+	span:empty {
+		display: none;
+	}
+	/* A wide list: its title, where and how, and when, in columns. */
+	@container (min-width: 40rem) {
+		div {
+			grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 1fr);
+			align-items: baseline;
+			gap: var(--space-m);
+		}
+		span:empty {
+			display: block;
+		}
+		small {
+			text-align: right;
+		}
 	}
 	small {
 		color: var(--color-muted);

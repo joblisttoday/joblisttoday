@@ -8,7 +8,7 @@
 	import { i18n, t } from '#lib/i18n/index.svelte.js';
 
 	/**
-	 * Every page, then its tabs at the bottom, centered: Home (with search), the signed-in
+	 * Every page, then its tabs at the bottom, centered: Home, Search, the signed-in
 	 * organization's page (else Sign in), Settings.
 	 * @type {{children: import('svelte').Snippet}}
 	 */
@@ -35,6 +35,7 @@
 <jl-nav>
 	<nav aria-label={t('nav.label')}>
 		<a href="/" aria-current={current(path === '/')}><Icon name="home" />{t('nav.home')}</a>
+		<a href="/search" aria-current={current(path === '/search')}><Icon name="search" />{t('nav.search')}</a>
 		{#if session.handle}
 			<a href="/{session.handle}" aria-current={current(path === `/${session.handle}` || path.startsWith(`/${session.handle}/`))}><Icon name="organization" />{t('nav.organization')}</a>
 		{:else}

@@ -1,27 +1,34 @@
 <script>
-	import { goto } from '$app/navigation';
+	import { goto, replaceState } from '$app/navigation';
+	import { page } from '$app/state';
 	import Icon from './Icon.svelte';
+	import Loading from './Loading.svelte';
 	import PlacesMap from './PlacesMap.svelte';
 	import config from '#lib/data/config.json';
-	import { match, organizations, reading } from '#lib/directory.svelte.js';
+	import { match, organizations } from '#lib/directory.svelte.js';
 	import { jobPath } from '#lib/records.js';
 	import { locationPoints } from '#lib/places.js';
 	import { domainOf } from '#lib/profile.js';
 	import { t } from '#lib/i18n/index.svelte.js';
 
 	/**
-	 * Search, on the home: the organizations on joblist and their open jobs (directory:
-	 * read from their own accounts, found through the network), by what they say; a domain
-	 * opens its page. Their places, on a map.
-	 * @type {{query?: string}}
+	 * Search (/search): the organizations on joblist and their open jobs (directory: read
+	 * from their own accounts, found through the network), by what they say; a domain opens
+	 * its page. Their places, on a map. What is asked stays in the address (?q=).
 	 */
-	let { query = $bindable('') } = $props();
+	let query = $state(page.url.searchParams.get('q') || '');
 	const id = $props.id();
 	const typed = $derived(query.trim());
 	const asking = $derived(typed.length >= config.search.minLength);
 	/** Read once a search starts (organizations() reads them once per visit). */
 	const loading = $derived(asking ? organizations() : null);
 	const domain = $derived(domainOf(typed));
+	$effect(() => {
+		const url = new URL(location.href);
+		if (typed) url.searchParams.set('q', typed);
+		else url.searchParams.delete('q');
+		if (url.href !== location.href) replaceState(url, {});
+	});
 
 	/** @param {import('#lib/profile.js').Profile[]} all */
 	const found = (all) => match(all, typed);
@@ -54,7 +61,7 @@
 			</ul>
 		{/if}
 		{#await loading}
-			<p><small>{reading.total ? t('search.reading', { done: reading.done, total: reading.total }) : t('profile.reading')}</small></p>
+			<Loading />
 		{:then all}
 			{@const result = found(all || [])}
 			<jl-wide>
@@ -105,7 +112,7 @@
 		margin-inline: auto;
 		padding-inline: var(--space-m);
 		border: var(--control-border);
-		border-radius: var(--radius-round);
+		border-radius: var(--radius);
 		background: var(--color-bg);
 		color: var(--color-muted);
 	}
@@ -133,7 +140,9 @@
 		clip-path: inset(50%);
 	}
 	jl-results {
-		display: block;
+		display: flex;
+		flex: 1;
+		flex-direction: column;
 		margin-top: var(--space-m);
 		text-align: start;
 	}

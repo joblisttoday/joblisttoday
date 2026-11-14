@@ -1,22 +1,23 @@
 <script>
 	import { tick } from 'svelte';
 	import Icon from './Icon.svelte';
+	import PlacePicker from './PlacePicker.svelte';
 	import config from '#lib/data/config.json';
-	import { locationLabel, samePlace, searchPlaces } from '#lib/places.js';
+	import { placeLine, samePlace, searchPlaces } from '#lib/places.js';
 	import { i18n, t } from '#lib/i18n/index.svelte.js';
 
 	/**
 	 * Places, added in a tap: the ones suggested (the organization's), or one found as it is
-	 * typed (OpenStreetMap), with where it is on the map filled in; each can still be written
-	 * by hand.
+	 * typed (OpenStreetMap: a city, an address, a named place), with where it is filled in;
+	 * each can still be written by hand, and its point chosen on a map.
 	 * @type {{locations: import('#lib/places.js').Location[], suggested?: import('#lib/places.js').Location[], legend?: string}}
 	 */
 	let { locations = $bindable(), suggested = [], legend = '' } = $props();
 	const id = $props.id();
-	const text = /** @type {const} */ (['name', 'address', 'country']);
+	const text = /** @type {const} */ (['address', 'name', 'country']);
 	const coordinates = /** @type {const} */ (['latitude', 'longitude']);
 
-	const offered = $derived(suggested.filter((s) => locationLabel(s) && !locations.some((l) => samePlace(l, s))));
+	const offered = $derived(suggested.filter((s) => placeLine(s) && !locations.some((l) => samePlace(l, s))));
 	let query = $state('');
 	/** @type {import('#lib/places.js').FoundPlace[]} */
 	let found = $state.raw([]);
@@ -26,6 +27,8 @@
 	let added = $state('');
 	/** The place written by hand, open to edit. */
 	let editing = $state(-1);
+	/** The places open, each showing its map. */
+	let opened = $state(/** @type {boolean[]} */ ([]));
 	/** @type {HTMLInputElement | undefined} */
 	let search = $state();
 
@@ -59,7 +62,7 @@
 	/** @param {import('#lib/places.js').Location} location */
 	function add(location) {
 		if (!locations.some((l) => samePlace(l, location))) locations.push({ ...location });
-		added = locationLabel(location);
+		added = placeLine(location);
 		query = '';
 		found = [];
 		tick().then(() => search?.focus());
@@ -68,6 +71,7 @@
 	/** @param {number} i */
 	function remove(i) {
 		locations.splice(i, 1);
+		opened.splice(i, 1);
 		if (editing >= locations.length) editing = -1;
 		tick().then(() => search?.focus());
 	}
@@ -84,10 +88,10 @@
 		<ul>
 			{#each locations as location, i (i)}
 				<li>
-					<details open={editing === i || undefined}>
+					<details open={editing === i || undefined} ontoggle={(e) => (opened[i] = e.currentTarget.open)}>
 						<summary>
 							<Icon name="place" />
-							<span>{locationLabel(location) || t('form.location', { number: i + 1 })}</span>
+							<span>{placeLine(location) || t('form.location', { number: i + 1 })}</span>
 							{#if location.latitude && location.longitude}<small>{t('form.location.onMap')}</small>{/if}
 						</summary>
 						{#each text as field (field)}
@@ -102,8 +106,9 @@
 								</span>
 							{/each}
 						</div>
+						{#if opened[i]}<PlacePicker bind:location={locations[i]} />{/if}
 					</details>
-					<button type="button" data-remove aria-label={t('form.location.removeOne', { name: locationLabel(location) || t('form.location', { number: i + 1 }) })} onclick={() => remove(i)}>
+					<button type="button" data-remove aria-label={t('form.location.removeOne', { name: placeLine(location) || t('form.location', { number: i + 1 }) })} onclick={() => remove(i)}>
 						<Icon name="close" />
 					</button>
 				</li>
@@ -115,7 +120,7 @@
 		<p><small>{t('form.location.suggested')}</small></p>
 		<menu>
 			{#each offered as place, i (i)}
-				<li><button type="button" data-chip onclick={() => add(place)}><Icon name="post" />{locationLabel(place)}</button></li>
+				<li><button type="button" data-chip onclick={() => add(place)}><Icon name="post" />{placeLine(place)}</button></li>
 			{/each}
 		</menu>
 	{/if}
@@ -235,7 +240,7 @@
 		gap: var(--space-s);
 		padding-inline: var(--space-m);
 		border: var(--control-border);
-		border-radius: var(--radius-round);
+		border-radius: var(--radius);
 		color: var(--color-muted);
 	}
 	[data-search]:focus-within {

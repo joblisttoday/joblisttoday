@@ -55,6 +55,16 @@ describe('a job offer', () => {
 		expect(toJob({ ...record, apply: undefined }).apply).toBe('');
 	});
 
+	it('may be applied to by a message on Bluesky, with or without a link', () => {
+		const both = jobRecord({ ...jobForm(null), title: 'Gardener', apply: 'jobs@acme.org', bluesky: true }, where, null, now);
+		expect(both.apply).toEqual({ url: 'mailto:jobs@acme.org', bluesky: true });
+		expect(jobForm(both, now).bluesky).toBe(true);
+		expect(toJob(both).bluesky).toBe(true);
+		const only = jobRecord({ ...jobForm(both, now), apply: '' }, where, both, now);
+		expect(only.apply).toEqual({ bluesky: true });
+		expect(jobRecord({ ...jobForm(only, now), bluesky: false }, where, only, now).apply).toBeUndefined();
+	});
+
 	it('keeps its address, its places and what the form does not show, unless changed', () => {
 		const before = { title: 'Gardener', company: 'acme.org', url: 'https://acme.org/jobs/1', locations: [{ name: 'Berlin', country: 'DE' }], salary: { min: 1, currency: 'EUR', period: 'month' }, createdAt: '2026-11-01T00:00:00Z', expiresAt: '2026-11-20T00:00:00Z' };
 		const same = jobRecord(jobForm(before, now), where, before, now);

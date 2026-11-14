@@ -30,7 +30,7 @@
 
 <form onsubmit={submit}>
 	<label for={id}>
-		{t('signin.handle')}
+		<span>{t('signin.handle')} <span data-required aria-hidden="true">*</span></span>
 		<input {id} bind:value={handle} type="text" placeholder={t('signin.placeholder')} autocomplete="username" autocapitalize="none" spellcheck="false" required />
 	</label>
 	<menu><button type="submit" disabled={going}>{going ? t('signin.going') : t('signin.submit')}</button></menu>

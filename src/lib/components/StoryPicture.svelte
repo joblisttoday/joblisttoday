@@ -3,16 +3,45 @@
 	 * The picture of one of joblist's four ideas (step 0–3): its domain is its handle; its
 	 * account keeps its description and jobs; its page on joblist; its jobs on its own website;
 	 * or all in one (step 4, 'summary'): its account, shown on joblist and on its website.
-	 * It plays once when shown; not at all with reduced motion. It only illustrates the text
-	 * beside it.
+	 * It plays once when shown, then again and again while hovered or pressed; not at all with
+	 * reduced motion. It only illustrates the text beside it.
 	 * @type {{step: number}}
 	 */
 	let { step } = $props();
+	/** Each time it plays again: its longest part takes 2s, then a moment to see it whole. */
+	const LOOP_MS = 3000;
+	let round = $state(0);
+
+	/** Hovered or pressed, it plays in a loop; let go, it ends the round it is in. @param {SVGElement} node */
+	function loop(node) {
+		/** @type {ReturnType<typeof setInterval> | undefined} */
+		let timer;
+		const start = () => {
+			if (timer || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+			round++;
+			timer = setInterval(() => round++, LOOP_MS);
+		};
+		const stop = () => {
+			clearInterval(timer);
+			timer = undefined;
+		};
+		node.addEventListener('pointerenter', start);
+		node.addEventListener('pointerdown', start);
+		node.addEventListener('pointerleave', stop);
+		node.addEventListener('pointercancel', stop);
+		return () => {
+			stop();
+			node.removeEventListener('pointerenter', start);
+			node.removeEventListener('pointerdown', start);
+			node.removeEventListener('pointerleave', stop);
+			node.removeEventListener('pointercancel', stop);
+		};
+	}
 	const rows = [140, 110, 160];
 </script>
 
-<svg viewBox="0 0 320 200" aria-hidden="true">
-	{#key step}
+<svg viewBox="0 0 320 200" aria-hidden="true" {@attach loop}>
+	{#key `${step}·${round}`}
 		{#if step === 4}
 			<g>
 				<rect x="12" y="52" width="112" height="96" rx="10" class="panel" />
@@ -205,7 +234,7 @@
 		stroke-linejoin: round;
 	}
 
-	/* Each picture plays once. */
+	/* Each picture plays once a round. */
 	.rise,
 	.pop,
 	.draw,

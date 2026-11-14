@@ -104,7 +104,7 @@ export function companyRecord(form, value, { domain = '', now = Date.now() } = {
 /* — A job offer — */
 
 /**
- * @typedef {{title: string, description: string, locations: import('#lib/places.js').Location[], remote: string, employment: string, apply: string, days: number}} JobForm
+ * @typedef {{title: string, description: string, locations: import('#lib/places.js').Location[], remote: string, employment: string, apply: string, bluesky: boolean, days: number}} JobForm
  *   locations: where it is done (on site or hybrid); none when remote.
  */
 
@@ -151,6 +151,8 @@ export function toJob(value) {
 		employment: String(value.employment || ''),
 		// Where to apply: its link for it, else its own page elsewhere (not its page here).
 		apply: safeUrl(value.apply?.url, { email: true }) || (String(value.url || '').startsWith(`${config.url}/job/`) ? '' : safeUrl(value.url)),
+		// Or by a direct message to its account on Bluesky.
+		bluesky: Boolean(value.apply?.bluesky),
 		createdAt: String(value.createdAt || ''),
 		expiresAt: String(value.expiresAt || '')
 	};
@@ -172,6 +174,7 @@ export function jobForm(value, now = Date.now()) {
 		remote: j.remote,
 		employment: j.employment,
 		apply: apply.replace(/^mailto:/i, ''),
+		bluesky: j.bluesky,
 		days: value ? daysLeft(j.expiresAt, now) || DEFAULT_DAYS : DEFAULT_DAYS
 	};
 }
@@ -205,7 +208,13 @@ export function jobRecord(form, { company, did, rkey }, value, now = Date.now())
 	// Where it is done, unless remote.
 	set('locations', form.remote === 'remote' ? '' : toLocations(form.locations, 20).slice(0, 20));
 	const apply = toApplyUrl(form.apply);
-	set('apply', apply ? { ...(value?.apply || {}), url: apply } : value?.apply?.bluesky ? { bluesky: true } : '');
+	/** @type {Record<string, any>} */
+	const how = { ...(value?.apply || {}) };
+	if (apply) how.url = apply;
+	else delete how.url;
+	if (form.bluesky) how.bluesky = true;
+	else delete how.bluesky;
+	set('apply', Object.keys(how).length ? how : '');
 	return record;
 }
 

@@ -29,8 +29,8 @@
 	--space-l: 1.5rem;
 	--space-xl: 2.5rem;
 
-	--radius: 0.5rem;
-	--radius-large: 1rem;
+	--radius: 0.375rem;
+	--radius-large: 0.625rem;
 	--radius-round: 999px;
 	--border: 1px solid var(--color-line);
 	--control-border: 1px solid var(--color-control-line);
@@ -102,7 +102,7 @@ main {
 
 /* A page with its map (or pictures) beside its text: wider on a big screen, the text in one
    column, the map in the other, kept in view. Forms and settings stay as wide as reading. */
-main:has(jl-wide, jl-home, jl-about) {
+main:has(jl-wide, jl-home, jl-about, jl-profile) {
 	max-width: calc(var(--wide-width) + 2 * var(--gutter));
 }
 jl-wide {
@@ -200,6 +200,11 @@ label small {
 	font-weight: normal;
 }
 
+/* A field that must be filled: a star after its name (the field itself says so to screen readers). */
+[data-required] {
+	color: var(--color-error);
+}
+
 /* Never under 16px: phones zoom into smaller fields. */
 input,
 select,
@@ -238,7 +243,7 @@ menu > a {
 	min-height: var(--tap-size);
 	padding: 0 var(--space-m);
 	border: var(--control-border);
-	border-radius: var(--radius-round);
+	border-radius: var(--radius);
 	background: var(--color-bg);
 	text-decoration: none;
 	cursor: pointer;
@@ -249,17 +254,11 @@ menu > a:hover {
 	background: var(--color-soft);
 }
 
+/* What a page is for: only a firmer border, no fill. */
 button[type='submit'],
 [data-primary] {
-	border-color: var(--color-accent);
-	background: var(--color-accent);
-	color: var(--color-accent-fg);
-}
-
-button[type='submit']:hover:not(:disabled),
-[data-primary]:hover {
-	background: var(--color-accent);
-	opacity: 0.85;
+	border-color: var(--color-fg);
+	font-weight: var(--font-weight-strong);
 }
 
 button:disabled {

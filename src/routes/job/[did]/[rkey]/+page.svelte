@@ -1,4 +1,5 @@
 <script>
+	import Loading from '#lib/components/Loading.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import config from '#lib/data/config.json';
@@ -6,7 +7,6 @@
 	import OrgPill from '#lib/components/OrgPill.svelte';
 	import PlacesMap from '#lib/components/PlacesMap.svelte';
 	import { locationPoints } from '#lib/places.js';
-	import { share } from '#lib/share.js';
 	import { ago } from '#lib/i18n/dates.js';
 	import { loadJob } from '#lib/profile.js';
 	import { daysLeft } from '#lib/records.js';
@@ -41,9 +41,8 @@
 			: []
 	);
 
-	let copied = $state(false);
 	const actions = $derived([
-		{ label: t('menu.share'), icon: /** @type {const} */ ('share'), onclick: async () => (copied = (await share({ title: found?.title || '', url: location.href })) === 'copied') },
+		{ label: t('menu.share'), icon: /** @type {const} */ ('share'), share: { title: found?.title || '', url: location.href } },
 		...(own
 			? [
 					{ label: t('profile.edit'), icon: /** @type {const} */ ('edit'), href: `${page.url.pathname}/edit` },
@@ -62,7 +61,7 @@
 <svelte:head><title>{found?.title || t('notFound.title')} · {config.name}</title></svelte:head>
 
 {#if job === undefined}
-	<p><small>…</small></p>
+	<Loading />
 {:else if job === 'unreachable'}
 	<p role="alert">{t('profile.unreachable')}</p>
 {:else if !found}
@@ -75,12 +74,17 @@
 				<OrgPill domain={found.company} name={found.name} avatar={found.avatar} />
 				<ContextMenu label={t('menu.more')} items={actions} />
 			</header>
-			{#if copied}<p role="status"><small>{t('menu.copied')}</small></p>{/if}
 			<h1>{found.title}</h1>
 			{#if facts.length}<p>{facts.join(' · ')}</p>{/if}
 			<p><small>{when.join(' · ')}</small></p>
 			{#if !found.live}<p role="status">{t('job.closed')}</p>{/if}
-			{#if found.live && found.apply}<menu><a href={found.apply} target="_blank" rel="noopener noreferrer" data-primary>{t('job.apply')}</a></menu>{/if}
+			{#if found.live && (found.apply || found.bluesky)}
+				<menu>
+					{#if found.apply}<a href={found.apply} target="_blank" rel="noopener noreferrer" data-primary>{t('job.apply')}</a>{/if}
+					<!-- Bluesky has no address that opens a message: its profile does, with its Message button. -->
+					{#if found.bluesky}<a href={config.links.bluesky.replace('{did}', found.did)} target="_blank" rel="noopener noreferrer" data-primary={found.apply ? undefined : ''}>{t('job.apply.bluesky')}</a>{/if}
+				</menu>
+			{/if}
 			{#if found.description}<p data-text>{found.description}</p>{/if}
 		</div>
 		<aside>{#if found.remote !== 'remote'}<PlacesMap points={locationPoints(found.locations)} />{/if}</aside>
@@ -88,6 +92,9 @@
 {/if}
 
 <style>
+	menu + [data-text] {
+		margin-top: var(--space-l);
+	}
 	header {
 		display: flex;
 		align-items: center;

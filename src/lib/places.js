@@ -47,12 +47,15 @@ export function toLocation(value) {
 /** Places as written by anyone, the safe ones (toLocation), at most `max`. @param {unknown} list @param {number} [max] */
 export const toLocations = (list, max = 50) => (Array.isArray(list) ? list.map(toLocation).filter((l) => l !== null).slice(0, max) : []);
 
-/** A place as one line: "Berlin, Germany". @param {Location} location */
+/** A place in short, its city and country: "Berlin, Germany". @param {Location} location */
 export const locationLabel = (location) => [location.name || location.address, location.country].filter(Boolean).join(', ');
 
-/** Whether two places are the same (by name and country). @param {Location} a @param {Location} b */
+/** A place in full, its address first: "Torstraße 1, Berlin, Germany". @param {Location} location */
+export const placeLine = (location) => [location.address, location.name, location.country].filter(Boolean).join(', ');
+
+/** Whether two places are the same (by address, name and country). @param {Location} a @param {Location} b */
 export function samePlace(a, b) {
-	const key = (/** @type {Location} */ l) => locationLabel(l).trim().toLowerCase();
+	const key = (/** @type {Location} */ l) => placeLine(l).trim().toLowerCase();
 	return key(a) !== '' && key(a) === key(b);
 }
 
@@ -62,23 +65,48 @@ export function samePlace(a, b) {
  * @returns {{lat: number, lon: number, label: string}[]}
  */
 export const locationPoints = (locations) =>
-	locations.filter((l) => l.latitude && l.longitude).map((l) => ({ lat: Number(l.latitude), lon: Number(l.longitude), label: locationLabel(l) }));
+	locations.filter((l) => l.latitude && l.longitude).map((l) => ({ lat: Number(l.latitude), lon: Number(l.longitude), label: placeLine(l) }));
+
+/** Where the house number goes before its street ("10 Downing Street"); elsewhere after ("Torstraße 1"). */
+const NUMBER_FIRST = new Set(['AU', 'CA', 'FR', 'GB', 'IE', 'IL', 'IN', 'LU', 'MY', 'NZ', 'PH', 'SG', 'US', 'ZA']);
 
 /**
- * A place Photon found (a GeoJSON feature), as records keep it.
+ * A place Photon found (a GeoJSON feature), as records keep it: a city, region or country by
+ * its name; an address, a street or a named place (an office, a building) with its address,
+ * its city as its name, and its country; each with where it is.
  * @param {any} feature
  * @returns {FoundPlace | null}
  */
 export function toFoundPlace(feature) {
 	const p = feature?.properties || {};
 	const [lon, lat] = feature?.geometry?.coordinates || [];
-	if (!p.name || !Number.isFinite(lon) || !Number.isFinite(lat)) return null;
-	const region = p.state && p.state !== p.name ? p.state : '';
+	if (!Number.isFinite(lon) || !Number.isFinite(lat)) return null;
+	const code = /^[A-Za-z]{2}$/.test(p.countrycode || '') ? String(p.countrycode).toUpperCase() : '';
 	/** @type {Location} */
-	const location = { name: String(p.name), latitude: degrees(lat), longitude: degrees(lon) };
+	const location = {};
+	let label;
+	if (p.type === 'house' || p.type === 'street' || p.type === 'other' || p.housenumber) {
+		const street = p.type === 'street' ? p.name : p.street;
+		const number = p.housenumber ? String(p.housenumber) : '';
+		const line = street ? (number ? (NUMBER_FIRST.has(code) ? `${number} ${street}` : `${street} ${number}`) : String(street)) : number;
+		const named = p.type === 'other' || (p.type === 'house' && p.name) ? p.name : '';
+		const address = [named, line, p.postcode].filter(Boolean).join(', ');
+		const city = p.city || p.locality || p.district || p.county || '';
+		if (!address) return null;
+		location.address = String(address);
+		if (city) location.name = String(city);
+		label = [address, city, p.country].filter(Boolean).join(', ');
+	} else {
+		if (!p.name) return null;
+		const region = p.state && p.state !== p.name ? p.state : '';
+		location.name = String(p.name);
+		label = [p.name, region, p.country].filter(Boolean).join(', ');
+	}
 	if (p.country) location.country = String(p.country);
-	if (/^[A-Za-z]{2}$/.test(p.countrycode || '')) location.countryCode = String(p.countrycode).toUpperCase();
-	return { label: [p.name, region, p.country].filter(Boolean).join(', '), location };
+	if (code) location.countryCode = code;
+	location.latitude = degrees(lat);
+	location.longitude = degrees(lon);
+	return { label, location };
 }
 
 /**
@@ -93,8 +121,8 @@ export function uniquePlaces(found) {
 }
 
 /**
- * Cities and places whose name starts as typed, in the reader's language (OpenStreetMap,
- * through Photon).
+ * Places whose name or address starts as typed (cities, addresses, named places), in the
+ * reader's language (OpenStreetMap, through Photon).
  * @param {string} query
  * @param {string} lang
  * @param {AbortSignal} [signal]
@@ -110,4 +138,24 @@ export async function searchPlaces(query, lang, signal) {
 	if (!res.ok) return [];
 	const { features = [] } = await res.json();
 	return uniquePlaces(features.map(toFoundPlace));
+}
+
+/**
+ * What is at a point (the nearest address or place), as records keep it; null when nothing
+ * is known there.
+ * @param {number} lat
+ * @param {number} lon
+ * @param {string} lang
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<FoundPlace | null>}
+ */
+export async function placeAt(lat, lon, lang, signal) {
+	const url = new URL(config.services.placeAt);
+	url.searchParams.set('lat', String(lat));
+	url.searchParams.set('lon', String(lon));
+	if (config.placeSearch.languages.includes(lang)) url.searchParams.set('lang', lang);
+	const res = await fetch(url, { signal });
+	if (!res.ok) return null;
+	const { features = [] } = await res.json();
+	return toFoundPlace(features[0]);
 }

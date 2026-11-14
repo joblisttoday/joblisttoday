@@ -2,10 +2,12 @@
 	import { page } from '$app/state';
 	import config from '#lib/data/config.json';
 	import ContextMenu from '#lib/components/ContextMenu.svelte';
+	import Loading from '#lib/components/Loading.svelte';
+	import JobFilters from '#lib/components/JobFilters.svelte';
 	import JobList from '#lib/components/JobList.svelte';
+	import { filterJobs } from '#lib/facets.js';
 	import PlacesMap from '#lib/components/PlacesMap.svelte';
 	import { locationPoints } from '#lib/places.js';
-	import { share } from '#lib/share.js';
 	import { domainOf, loadProfile } from '#lib/profile.js';
 	import { session } from '#lib/session.svelte.js';
 	import { t } from '#lib/i18n/index.svelte.js';
@@ -32,16 +34,22 @@
 	const found = $derived(typeof profile === 'object' && profile ? profile : null);
 	const open = $derived(found ? found.jobs.filter((j) => j.live) : []);
 	const closed = $derived(found ? found.jobs.filter((j) => !j.live) : []);
-	/** Its places on the map; and where its open jobs are done, each opening its job. */
+	/** The filters chosen over its open jobs, and those they leave. */
+	let chosen = $state(/** @type {import('#lib/facets.js').Chosen} */ ({}));
+	$effect(() => {
+		void domain;
+		chosen = {};
+	});
+	const shown = $derived(filterJobs(open, chosen));
+	/** Its places on the map; and where its open jobs shown are done, each opening its job. */
 	const points = $derived(
 		found
 			? [
 					...locationPoints(found.company?.locations || []).map((p) => ({ ...p, label: `${found.company?.name || domain} · ${p.label}` })),
-					...open.flatMap((j) => locationPoints(j.locations).map((p) => ({ ...p, label: j.title, href: `/job/${encodeURIComponent(found.did)}/${j.rkey}` })))
+					...shown.flatMap((j) => locationPoints(j.locations).map((p) => ({ ...p, label: j.title, href: `/job/${encodeURIComponent(found.did)}/${j.rkey}` })))
 				]
 			: []
 	);
-	let copied = $state(false);
 	/** A job its own account deleted, gone from the page. @param {string} rkey */
 	const forget = (rkey) => found && (found.jobs = found.jobs.filter((j) => j.rkey !== rkey));
 	const actions = $derived([
@@ -52,15 +60,14 @@
 					{ label: t('profile.embed'), icon: /** @type {const} */ ('source'), href: `/${domain}/embed` }
 				]
 			: []),
-		{ label: t('menu.share'), icon: /** @type {const} */ ('share'), onclick: async () => (copied = (await share({ title: found?.company?.name || domain, url: location.href })) === 'copied') }
+		{ label: t('menu.share'), icon: /** @type {const} */ ('share'), share: { title: found?.company?.name || domain, url: location.href } }
 	]);
 </script>
 
 <svelte:head><title>{found?.company?.name || domain || t('notFound.title')} · {config.name}</title></svelte:head>
 
 {#if profile === undefined}
-	<h1>{domain}</h1>
-	<p><small>{t('profile.reading')}</small></p>
+	<Loading />
 {:else if profile === 'unreachable'}
 	<h1>{domain}</h1>
 	<p role="alert">{t('profile.unreachable')}</p>
@@ -68,58 +75,74 @@
 	<h1>{domain || t('notFound.title')}</h1>
 	<p>{domain ? t('profile.none', { domain }) : t('notFound.text')}</p>
 {:else}
-	<jl-wide>
-		<div>
-			<header>
-				{#if found.avatar}<img src={found.avatar} alt="" />{/if}
-				<h1>{found.company?.name || domain}</h1>
-				<ContextMenu label={t('menu.more')} items={actions} />
-			</header>
-			{#if copied}<p role="status"><small>{t('menu.copied')}</small></p>{/if}
-			<p>
-				<small>
-					{#if found.company?.url}<a href={found.company.url} target="_blank" rel="noopener">{domain}</a>{:else}{domain}{/if}
-					{#if found.company?.kind}· {t(`kind.${found.company.kind}`)}{/if}
-					{#if found.company?.tags.length}· {found.company.tags.join(', ')}{/if}
-				</small>
-			</p>
-			{#if found.company?.description}<p data-text>{found.company.description}</p>{:else if !found.company}<p><small>{t('profile.notDescribed')}</small></p>{/if}
-			{#if found.company?.links.length}
-				<p data-links>{#each found.company.links as link (link)}<a href={link} target="_blank" rel="noopener">{link.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}</a>{/each}</p>
-			{/if}
-
-			<section aria-labelledby="profile-jobs">
-				<h2 id="profile-jobs">{t('profile.jobs')}</h2>
-				{#if open.length}
-					<JobList jobs={open} did={found.did} {own} ondeleted={forget} />
-				{:else}
-					<p>{t('profile.jobs.none')}</p>
+	<jl-profile>
+		<div data-intro>
+			<div>
+				<header>
+					{#if found.avatar}<img src={found.avatar} alt="" />{/if}
+					<h1>{found.company?.name || domain}</h1>
+					<ContextMenu label={t('menu.more')} items={actions} />
+				</header>
+				<p>
+					<small>
+						{#if found.company?.url}<a href={found.company.url} target="_blank" rel="noopener">{domain}</a>{:else}{domain}{/if}
+						{#if found.company?.kind}· {t(`kind.${found.company.kind}`)}{/if}
+						{#if found.company?.tags.length}· {found.company.tags.join(', ')}{/if}
+					</small>
+				</p>
+				{#if found.company?.description}<p data-text>{found.company.description}</p>{:else if !found.company}<p><small>{t('profile.notDescribed')}</small></p>{/if}
+				{#if found.company?.links.length}
+					<p data-links>{#each found.company.links as link (link)}<a href={link} target="_blank" rel="noopener">{link.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}</a>{/each}</p>
 				{/if}
-			</section>
-
-			{#if own && closed.length}
-				<section aria-labelledby="profile-closed">
-					<h2 id="profile-closed">{t('profile.closed')}</h2>
-					<JobList jobs={closed} did={found.did} {own} ondeleted={forget} />
-				</section>
-			{/if}
-
-			{#if own && !(found.company && found.jobs.length)}
-				<section aria-labelledby="profile-setup">
-					<h2 id="profile-setup">{t('setup.title')}</h2>
-					<ol>
-						<li><a href="/{domain}/edit">{t('setup.describe')}</a>{#if found.company}<small> · {t('setup.done')}</small>{/if}</li>
-						<li><a href="/{domain}/post">{t('setup.post')}</a>{#if found.jobs.length}<small> · {t('setup.done')}</small>{/if}</li>
-						<li><a href="/{domain}/embed">{t('setup.embed')}</a></li>
-					</ol>
-				</section>
-			{/if}
+			</div>
+			<aside><PlacesMap {points} /></aside>
 		</div>
-		<aside><PlacesMap {points} /></aside>
-	</jl-wide>
+
+		<section aria-labelledby="profile-jobs">
+			<h2 id="profile-jobs">{t('profile.jobs')}</h2>
+			{#if open.length}
+				<JobFilters jobs={open} bind:chosen shown={shown.length} />
+				<JobList jobs={shown} did={found.did} {own} ondeleted={forget} />
+			{:else}
+				<p>{t('profile.jobs.none')}</p>
+			{/if}
+		</section>
+
+		{#if own && closed.length}
+			<section aria-labelledby="profile-closed">
+				<h2 id="profile-closed">{t('profile.closed')}</h2>
+				<JobList jobs={closed} did={found.did} {own} ondeleted={forget} />
+			</section>
+		{/if}
+
+		{#if own && !(found.company && found.jobs.length)}
+			<section aria-labelledby="profile-setup">
+				<h2 id="profile-setup">{t('setup.title')}</h2>
+				<ol>
+					<li><a href="/{domain}/edit">{t('setup.describe')}</a>{#if found.company}<small> · {t('setup.done')}</small>{/if}</li>
+					<li><a href="/{domain}/post">{t('setup.post')}</a>{#if found.jobs.length}<small> · {t('setup.done')}</small>{/if}</li>
+					<li><a href="/{domain}/embed">{t('setup.embed')}</a></li>
+				</ol>
+			</section>
+		{/if}
+	</jl-profile>
 {/if}
 
 <style>
+	/* Who it is, its places small beside it on a wide screen; its jobs below, the whole width. */
+	jl-profile {
+		display: block;
+		--map-height: 14rem;
+	}
+	@media (min-width: 48rem) {
+		[data-intro]:has(> aside :global(figure)) {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
+			gap: var(--space-xl);
+			align-items: start;
+			--map-margin: var(--space-l) 0 0;
+		}
+	}
 	header {
 		display: flex;
 		align-items: center;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { locationLabel, locationPoints, samePlace, toFoundPlace, toLocation, toLocations, uniquePlaces } from './places.js';
+import { locationLabel, locationPoints, placeLine, samePlace, toFoundPlace, toLocation, toLocations, uniquePlaces } from './places.js';
 
 describe('places', () => {
 	it('keeps only what a place may say, coordinates only on the Earth', () => {
@@ -30,5 +30,19 @@ describe('places', () => {
 		const found = toFoundPlace(berlin);
 		expect(found).toEqual({ label: 'Berlin, Germany', location: { name: 'Berlin', country: 'Germany', countryCode: 'DE', latitude: '52.51704', longitude: '13.40495' } });
 		expect(uniquePlaces([found, toFoundPlace(berlin), null])).toHaveLength(1);
+	});
+
+	it('reads an address or a named place: its address, its city as its name, its country', () => {
+		const at = (/** @type {Record<string, any>} */ properties) => toFoundPlace({ properties, geometry: { coordinates: [2.29, 48.86] } });
+		const office = at({ type: 'house', name: 'Soho House Berlin', housenumber: '1', street: 'Torstraße', postcode: '10119', city: 'Berlin', country: 'Deutschland', countrycode: 'DE' });
+		expect(office).toEqual({
+			label: 'Soho House Berlin, Torstraße 1, 10119, Berlin, Deutschland',
+			location: { address: 'Soho House Berlin, Torstraße 1, 10119', name: 'Berlin', country: 'Deutschland', countryCode: 'DE', latitude: '48.86', longitude: '2.29' }
+		});
+		expect(at({ type: 'house', housenumber: '5', street: 'Avenue Anatole France', postcode: '75007', city: 'Paris', country: 'France', countrycode: 'FR' })?.location.address).toBe('5 Avenue Anatole France, 75007');
+		expect(at({ type: 'street', name: 'Torstraße', city: 'Berlin', countrycode: 'DE' })?.location).toMatchObject({ address: 'Torstraße', name: 'Berlin' });
+		expect(placeLine(/** @type {any} */ (office).location)).toBe('Soho House Berlin, Torstraße 1, 10119, Berlin, Deutschland');
+		// Two offices in one city are two places.
+		expect(samePlace({ address: 'Torstraße 1', name: 'Berlin' }, { address: 'Torstraße 2', name: 'Berlin' })).toBe(false);
 	});
 });

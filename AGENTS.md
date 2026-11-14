@@ -19,7 +19,7 @@ usage is public on Umami (`analytics` in config).
 
 Choices, on purpose:
 - Static files on GitHub Pages, built on each push (`.github/workflows/pages.yml`, `npm run build:site`): the app runs in the browser (`ssr = false`), and `site/site.js` writes `404.html`, the sitemap, robots.txt, llms.txt, `CNAME` and `.nojekyll` after the build.
-- Its pages: home `/` (with search), `/signin`, `/settings`, `/about`, an organization's `/{domain}` (where its own account describes it, part by part at `/{domain}/edit/…`, and posts its jobs) and `/job/{did}/{rkey}` ([docs/architecture.md](docs/architecture.md)).
+- Its pages: home `/`, `/search`, `/signin`, `/settings`, `/about`, an organization's `/{domain}` (where its own account describes it, part by part at `/{domain}/edit/…`, and posts its jobs) and `/job/{did}/{rkey}` ([docs/architecture.md](docs/architecture.md)).
 - Places are found with OpenStreetMap (Photon, `src/lib/places.js`) and shown on a globe (MapLibre, OpenFreeMap tiles, loaded only with a map: `src/lib/map/maplibre.js`).
 - Any other address (`/{domain}`, `/job/…`) gets `404.html` with status 404, on which the app starts and shows it.
 - What a page shows is read by each person's browser from the organization's own account (`src/lib/profile.js`).

@@ -1,4 +1,5 @@
 <script>
+	import Loading from './Loading.svelte';
 	import SignIn from './SignIn.svelte';
 	import { page } from '$app/state';
 	import { session } from '#lib/session.svelte.js';
@@ -13,7 +14,7 @@
 </script>
 
 {#if !session.ready}
-	<p><small>…</small></p>
+	<Loading />
 {:else if session.handle === handle}
 	{@render children()}
 {:else}

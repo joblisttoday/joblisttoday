@@ -1,6 +1,7 @@
 <script>
 	import config from '#lib/data/config.json';
 	import SettingsHeader from '#lib/components/SettingsHeader.svelte';
+	import PageAddress from '#lib/components/PageAddress.svelte';
 	import StoryPicture from '#lib/components/StoryPicture.svelte';
 	import { t } from '#lib/i18n/index.svelte.js';
 
@@ -38,6 +39,7 @@
 			<div>
 				<h2 id="about-{n}"><span>{n}</span>{t(`home.step.${n}.title`)}</h2>
 				<p>{t(`home.step.${n}.text`)}</p>
+				{#if n === 3}<PageAddress />{/if}
 			</div>
 			<figure {@attach inView(i)}>
 				{#if seen[i]}<StoryPicture step={i} />{/if}
@@ -47,11 +49,13 @@
 </jl-about>
 
 <style>
+	/* One idea a screen. */
 	section {
 		display: grid;
 		gap: var(--space-m);
 		align-items: center;
-		margin-top: var(--space-xl);
+		align-content: center;
+		min-height: 100dvh;
 	}
 	h2 {
 		margin: 0 0 var(--space-xs);

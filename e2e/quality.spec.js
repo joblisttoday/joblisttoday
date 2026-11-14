@@ -16,5 +16,6 @@ qualityTests([
 	{ name: 'settings', path: '/settings', touch },
 	{ name: 'language', path: '/settings/language', touch },
 	{ name: 'about', path: '/about', touch },
+	{ name: 'search', path: '/search', touch },
 	{ name: 'not found', path: '/a/b/c', touch }
 ]);

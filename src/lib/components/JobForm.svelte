@@ -44,7 +44,8 @@
 </script>
 
 <form onsubmit={submit}>
-	<label>{t('post.field.title')}<input bind:value={form.title} required maxlength={config.jobPost.titleMax} /></label>
+	<p aria-hidden="true"><small><span data-required>*</span> {t('form.required')}</small></p>
+	<label><span>{t('post.field.title')} <span data-required aria-hidden="true">*</span></span><input bind:value={form.title} required maxlength={config.jobPost.titleMax} /></label>
 	<label>{t('post.field.description')}<textarea bind:value={form.description} maxlength={config.jobPost.descriptionMax}></textarea></label>
 	<label>
 		{t('post.field.remote')}
@@ -67,6 +68,7 @@
 		</select>
 	</label>
 	<label>{t('post.field.apply')} <small>{t('post.field.apply.help')}</small><input bind:value={form.apply} inputmode="url" /></label>
+	<label data-check><input type="checkbox" bind:checked={form.bluesky} />{t('post.field.bluesky')}</label>
 	<label>
 		{t('post.field.days')}
 		<select bind:value={form.days}>

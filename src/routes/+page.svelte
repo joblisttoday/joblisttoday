@@ -1,20 +1,20 @@
 <script>
 	import config from '#lib/data/config.json';
-	import HomeSearch from '#lib/components/HomeSearch.svelte';
+	import Loading from '#lib/components/Loading.svelte';
 	import Logo from '#lib/components/Logo.svelte';
 	import OrgPill from '#lib/components/OrgPill.svelte';
+	import SettingsLinks from '#lib/components/SettingsLinks.svelte';
 	import StoryPicture from '#lib/components/StoryPicture.svelte';
 	import { loadProfile } from '#lib/profile.js';
 	import { session } from '#lib/session.svelte.js';
 	import { t } from '#lib/i18n/index.svelte.js';
 
 	/**
-	 * joblist, in a line; search (organizations and their jobs). Then, signed out, what it
+	 * joblist, in a line. Then, signed out, what it
 	 * does in brief, with its picture (more on /about), and for an organization, to sign in;
 	 * signed in, its own in brief: its pill (its page), its open jobs, to post one. joblist's
 	 * mark last.
 	 */
-	let query = $state('');
 	const mine = $derived(session.handle ? loadProfile(session.handle).catch(() => null) : null);
 </script>
 
@@ -26,44 +26,43 @@
 		<p>{t('home.lead')}</p>
 	</hgroup>
 
-	<HomeSearch bind:query />
-
-	{#if !query.trim()}
-		<jl-home-body>
-			{#if session.handle}
-				{@const domain = session.handle}
-				<section aria-labelledby="home-org" data-center>
-					<h2 id="home-org">{t('company.title')}</h2>
-					{#await mine}
-						<OrgPill {domain} />
-						<p><small>{t('profile.reading')}</small></p>
-					{:then profile}
-						{@const open = profile ? profile.jobs.filter((j) => j.live).length : 0}
-						<OrgPill {domain} name={profile?.company?.name} avatar={profile?.avatar} />
-						<p>
-							{#if open}<a href="/{domain}#profile-jobs">{t('embed.count', { count: open })}</a>{:else}{t('profile.jobs.none')}{/if}
-						</p>
-						<menu><a href="/{domain}/post" data-primary>{t('profile.post')}</a></menu>
-					{/await}
-				</section>
-			{:else if session.ready}
-				<section aria-labelledby="home-what" data-what>
-					<div>
-						<h2 id="home-what">{t('home.what.title')}</h2>
-						<p>{t('home.summary')}</p>
-						<p><a href="/about">{t('home.more')}</a></p>
-					</div>
-					<StoryPicture step={4} />
-				</section>
-				<section aria-labelledby="home-org" data-center>
-					<h2 id="home-org">{t('home.org')}</h2>
-					<p>{t('home.org.text')}</p>
-					<menu><a href="/signin" data-primary>{t('signin.title')}</a></menu>
-				</section>
-				<a href="/" data-logo aria-label={t('nav.home')}><Logo /></a>
-			{/if}
-		</jl-home-body>
-	{/if}
+	<jl-home-body>
+		{#if session.handle}
+			{@const domain = session.handle}
+			<section aria-labelledby="home-org" data-mine>
+				<h2 id="home-org">{t('company.title')}</h2>
+				{#await mine}
+					<OrgPill {domain} />
+					<Loading />
+				{:then profile}
+					{@const open = profile ? profile.jobs.filter((j) => j.live).length : 0}
+					<OrgPill {domain} name={profile?.company?.name} avatar={profile?.avatar} />
+					<SettingsLinks
+						items={[
+							{ href: `/${domain}#profile-jobs`, icon: 'jobs', label: t('profile.jobs'), value: String(open) },
+							{ href: `/${domain}/post`, icon: 'post', label: t('profile.post') },
+							{ href: `/${domain}/edit`, icon: 'edit', label: t('profile.edit') }
+						]}
+					/>
+				{/await}
+			</section>
+		{:else if session.ready}
+			<section aria-labelledby="home-what" data-what>
+				<div>
+					<h2 id="home-what">{t('home.what.title')}</h2>
+					<p>{t('home.summary')}</p>
+					<p><a href="/about">{t('home.more')}</a></p>
+				</div>
+				<StoryPicture step={4} />
+			</section>
+			<section aria-labelledby="home-org" data-center>
+				<h2 id="home-org">{t('home.org')}</h2>
+				<p>{t('home.org.text')}</p>
+				<menu><a href="/signin" data-primary>{t('signin.title')}</a></menu>
+			</section>
+			<a href="/" data-logo aria-label={t('nav.home')}><Logo /></a>
+		{/if}
+	</jl-home-body>
 </jl-home>
 
 <style>
@@ -81,6 +80,31 @@
 	jl-home-body {
 		justify-content: center;
 		padding-block: var(--space-l);
+	}
+	/* Signed in: its own, right under the title, as wide as reading. */
+	jl-home-body:has(> [data-mine]) {
+		justify-content: flex-start;
+	}
+	[data-mine] {
+		display: grid;
+		gap: var(--space-m);
+		width: 100%;
+		max-width: var(--reading-width);
+		margin-inline: auto;
+	}
+	[data-mine] h2 {
+		margin: 0;
+		color: var(--color-muted);
+		font-size: var(--font-size-small);
+		font-weight: var(--font-weight-strong);
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+	[data-mine] > :global(a) {
+		justify-self: start;
+	}
+	[data-mine] :global(menu) {
+		margin: 0;
 	}
 	hgroup,
 	[data-center] {

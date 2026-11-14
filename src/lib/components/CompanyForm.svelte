@@ -1,4 +1,5 @@
 <script>
+	import TagsField from './TagsField.svelte';
 	import LocationFields from './LocationFields.svelte';
 	import Icon from './Icon.svelte';
 	import config from '#lib/data/config.json';
@@ -48,7 +49,8 @@
 
 <form onsubmit={submit}>
 	{#if section === 'about'}
-		<label>{t('company.name')}<input bind:value={form.name} required maxlength="100" /></label>
+		<p aria-hidden="true"><small><span data-required>*</span> {t('form.required')}</small></p>
+		<label><span>{t('company.name')} <span data-required aria-hidden="true">*</span></span><input bind:value={form.name} required maxlength="100" /></label>
 		<label>{t('company.url')}<input bind:value={form.url} type="url" inputmode="url" /></label>
 		<label>{t('company.description')}<textarea bind:value={form.description} maxlength="3000"></textarea></label>
 	{:else if section === 'kind'}
@@ -59,7 +61,7 @@
 			{/each}
 		</fieldset>
 	{:else if section === 'tags'}
-		<label>{t('company.tags')} <small>{t('company.tags.help')}</small><input bind:value={form.tags} /></label>
+		<TagsField bind:value={form.tags} />
 	{:else if section === 'places'}
 		<LocationFields bind:locations={form.locations} />
 	{:else}

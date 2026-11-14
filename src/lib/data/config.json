@@ -35,10 +35,12 @@
 		"handleResolver": "https://public.api.bsky.app",
 		"dns": "https://cloudflare-dns.com/dns-query",
 		"relay": "https://relay1.us-east.bsky.network",
-		"placeSearch": "https://photon.komoot.io/api/"
+		"placeSearch": "https://photon.komoot.io/api/",
+		"placeAt": "https://photon.komoot.io/reverse"
 	},
 	"links": {
-		"signup": "https://bsky.app"
+		"signup": "https://bsky.app",
+		"bluesky": "https://bsky.app/profile/{did}"
 	},
 	"jobPost": {
 		"days": 30,
@@ -84,6 +86,7 @@
 		],
 		"zoom": 1,
 		"maxZoom": 11,
+		"pickZoom": 15,
 		"padding": 48,
 		"pointRadius": 6,
 		"pointStroke": 2,
@@ -96,7 +99,7 @@
 		"finePointer": "(hover: hover) and (pointer: fine)"
 	},
 	"placeSearch": {
-		"limit": 6,
+		"limit": 8,
 		"minLength": 2,
 		"delayMs": 250,
 		"languages": [
@@ -105,6 +108,9 @@
 			"de"
 		],
 		"layers": [
+			"house",
+			"street",
+			"other",
 			"city",
 			"locality",
 			"district",

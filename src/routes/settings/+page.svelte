@@ -1,6 +1,7 @@
 <script>
 	import config from '#lib/data/config.json';
 	import Logo from '#lib/components/Logo.svelte';
+	import SettingsHeader from '#lib/components/SettingsHeader.svelte';
 	import SettingsLinks from '#lib/components/SettingsLinks.svelte';
 	import { getProfile } from '#lib/atproto.js';
 	import { session, signOut } from '#lib/session.svelte.js';
@@ -17,7 +18,7 @@
 
 <svelte:head><title>{t('nav.settings')} · {config.name}</title></svelte:head>
 
-<h1>{t('nav.settings')}</h1>
+<SettingsHeader title={t('nav.settings')} back="/" backLabel={t('nav.home')} />
 
 {#if session.handle}
 	<a href="/{session.handle}" data-you>
@@ -44,7 +45,7 @@
 {/if}
 
 <footer>
-	<a href="/about"><Logo />{config.name}</a>
+	<a href="/"><Logo />{config.name}</a>
 </footer>
 
 <style>
